@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Practice Hub · Academia de Idiomas Smart</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* ============ THEME ============ */
+  :root{
+    --red:#9E1C26; --red-dark:#7C141D; --red-soft:#F7E6E7;
+    --bg:#FBF7F5; --surface:#FFFFFF; --surface-2:#F4EEEC;
+    --text:#2B2224; --muted:#6E6366; --border:#E7DCDA;
+    --shadow:0 6px 24px rgba(110,30,38,.10);
+    --radius:22px;
+  }
+  [data-theme="dark"]{
+    --red:#E0525D; --red-dark:#C73E49; --red-soft:#3A1F22;
+    --bg:#17131A; --surface:#221C24; --surface-2:#2C2530;
+    --text:#F3ECEE; --muted:#B5A8AC; --border:#3A3140;
+    --shadow:0 6px 24px rgba(0,0,0,.40);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; font-family:'Nunito',system-ui,sans-serif; font-size:18px; line-height:1.55;
+    background:var(--bg); color:var(--text);
+    transition:background .4s ease,color .4s ease;
+  }
+  a{color:var(--red)}
+  button,input,select,textarea{font:inherit}
+  :focus-visible{outline:3px solid var(--red);outline-offset:3px}
+
+  /* ============ BUTTONS (oval, big, spaced) ============ */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:.5em;
+    min-height:54px;padding:.75em 1.6em;margin:.35em;
+    border-radius:999px;border:2px solid var(--red);
+    background:var(--surface);color:var(--red);
+    font-weight:800;font-size:1.05rem;cursor:pointer;text-decoration:none;
+    transition:transform .2s ease,background .25s ease,color .25s ease,box-shadow .25s ease;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+  .btn:active{transform:translateY(0)}
+  .btn.primary{background:var(--red);color:#fff}
+  .btn.primary:hover{background:var(--red-dark)}
+  .btn.ghost{border-color:var(--border);color:var(--text)}
+  .btn.small{min-height:46px;padding:.5em 1.2em;font-size:.95rem}
+  .btn.danger{border-color:#B3261E;color:#B3261E}
+
+  /* ============ HEADER ============ */
+  header{
+    background:var(--surface);border-bottom:4px solid var(--red);
+    box-shadow:var(--shadow);position:sticky;top:0;z-index:20;
+    transition:background .4s ease;
+  }
+  .header-inner{max-width:1280px;margin:auto;padding:14px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .logo-badge{background:#fff;border-radius:18px;padding:6px 12px;display:flex}
+  .logo-badge img{height:64px;display:block}
+  .brand-title{flex:1;min-width:200px}
+  .brand-title h1{margin:0;font-size:1.6rem;font-weight:800;color:var(--red)}
+  .brand-title p{margin:0;color:var(--muted);font-size:1rem}
+
+  /* ============ LANGUAGE WINDOWS ============ */
+  .lang-switch{max-width:1280px;margin:26px auto 0;padding:0 24px;display:flex;gap:8px;flex-wrap:wrap}
+  .lang-tab{
+    flex:1;min-width:240px;min-height:70px;border-radius:999px;border:3px solid var(--red);
+    background:var(--surface);color:var(--red);font-weight:800;font-size:1.2rem;cursor:pointer;
+    transition:all .3s ease;margin:.3em;
+  }
+  .lang-tab.active{background:var(--red);color:#fff;box-shadow:var(--shadow)}
+
+  main{max-width:1280px;margin:auto;padding:10px 24px 80px}
+  .window-intro{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:22px 0 6px}
+  .window-intro h2{margin:0;font-size:1.7rem}
+  .window-intro p{margin:4px 0 0;color:var(--muted)}
+
+  /* ============ SECTIONS NAV ============ */
+  .sections{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0}
+  .sec-btn{
+    display:inline-flex;align-items:center;gap:.5em;min-height:56px;padding:.6em 1.4em;margin:.3em;
+    border-radius:999px;border:2px solid var(--border);background:var(--surface);color:var(--text);
+    font-weight:700;font-size:1.05rem;cursor:pointer;transition:all .25s ease;
+  }
+  .sec-btn:hover{border-color:var(--red);transform:translateY(-2px)}
+  .sec-btn.active{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+  .count{background:var(--red);color:#fff;border-radius:999px;padding:0 .6em;font-size:.85rem;min-width:1.8em;text-align:center}
+
+  .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+  .search{
+    flex:1;min-width:240px;min-height:56px;padding:.6em 1.4em;border-radius:999px;
+    border:2px solid var(--border);background:var(--surface);color:var(--text);transition:border .2s;
+  }
+  .search:focus{border-color:var(--red);outline:none}
+
+  .section-header{display:flex;align-items:center;gap:14px;margin:8px 0 18px}
+  .section-header .icon{font-size:2.2rem}
+  .section-header h3{margin:0;font-size:1.5rem}
+  .section-header p{margin:0;color:var(--muted)}
+
+  /* ============ CARDS ============ */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:22px}
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;
+    animation:rise .45s ease both;transition:transform .25s ease,background .4s ease;
+  }
+  .card:hover{transform:translateY(-4px)}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .tag{align-self:flex-start;background:var(--red-soft);color:var(--red);border-radius:999px;padding:.25em .9em;font-weight:700;font-size:.9rem}
+  .card h4{margin:0;font-size:1.25rem}
+  .card .desc{margin:0;color:var(--muted);white-space:pre-line}
+  .card .meta{font-size:.95rem;color:var(--muted)}
+  .card .actions{display:flex;flex-wrap:wrap;margin:6px -.35em -.35em}
+  .card .link-line{font-size:.95rem;word-break:break-all}
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);background:var(--surface);border-radius:var(--radius);border:2px dashed var(--border)}
+  .empty .big{font-size:3rem}
+
+  /* ============ MODALS ============ */
+  .overlay{
+    position:fixed;inset:0;background:rgba(20,10,12,.55);display:flex;align-items:center;justify-content:center;
+    padding:16px;z-index:50;opacity:0;pointer-events:none;transition:opacity .3s ease;
+  }
+  .overlay.open{opacity:1;pointer-events:auto}
+  .modal{
+    background:var(--surface);color:var(--text);border-radius:28px;width:100%;max-width:720px;max-height:92vh;overflow:auto;
+    padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.35);transform:translateY(20px) scale(.98);transition:transform .3s ease;
+  }
+  .overlay.open .modal{transform:none}
+  .modal h2{margin:0 0 6px;color:var(--red)}
+  .field{margin:16px 0}
+  .field label{display:block;font-weight:800;margin-bottom:6px}
+  .field small{color:var(--muted)}
+  .field input,.field select,.field textarea{
+    width:100%;min-height:54px;padding:.7em 1.2em;border-radius:20px;border:2px solid var(--border);
+    background:var(--bg);color:var(--text);transition:border .2s;
+  }
+  .field textarea{min-height:110px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--red);outline:none}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.row{grid-template-columns:1fr}}
+  .type-grid{display:flex;flex-wrap:wrap}
+  .type-opt{
+    display:inline-flex;align-items:center;gap:.4em;min-height:50px;padding:.5em 1.2em;margin:.3em;border-radius:999px;
+    border:2px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-weight:700;transition:all .2s;
+  }
+  .type-opt.active{border-color:var(--red);background:var(--red-soft);color:var(--red)}
+  .create-box{background:var(--surface-2);border-radius:22px;padding:16px 18px;margin-top:8px}
+  .create-box p{margin:0 0 6px;font-weight:700}
+  .modal-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+
+  .viewer{max-width:1200px;height:92vh;display:flex;flex-direction:column;padding:18px}
+  .viewer-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .viewer-head h2{flex:1;margin:0;font-size:1.3rem}
+  .viewer iframe{flex:1;width:100%;border:0;border-radius:18px;background:#fff}
+  .viewer .hint{color:var(--muted);font-size:.9rem;margin:8px 4px 0}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--red);color:#fff;
+    padding:14px 28px;border-radius:999px;font-weight:700;z-index:60;transition:transform .35s ease;box-shadow:var(--shadow)
+  }
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .status{font-size:.85rem;color:var(--muted);text-align:center;margin-top:30px}
+  footer{text-align:center;color:var(--muted);padding:20px;font-size:.95rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-badge"><img src="logo.png" alt="Academia de Idiomas Smart logo"></div>
+    <div class="brand-title">
+      <h1>Smart Practice Hub</h1>
+      <p>Practice materials shared by our teachers</p>
+    </div>
+    <button class="btn ghost" id="themeBtn" aria-label="Change theme">🌙 Dark mode</button>
+    <button class="btn primary" id="addBtn">➕ Add material</button>
+  </div>
+</header>
+
+<div class="lang-switch" role="tablist">
+  <button class="lang-tab active" data-lang="english" role="tab">🇬🇧 English Teachers</button>
+  <button class="lang-tab" data-lang="french" role="tab">🇫🇷 French Teachers</button>
+</div>
+
+<main>
+  <div class="window-intro">
+    <div>
+      <h2 id="windowTitle">English Practice Materials</h2>
+      <p>Choose a section, then open any material right here on this page.</p>
+    </div>
+  </div>
+
+  <nav class="sections" id="sections"></nav>
+
+  <div class="toolbar">
+    <input class="search" id="search" type="search" placeholder="🔎  Search by title, teacher or description…">
+  </div>
+
+  <div class="section-header" id="sectionHeader"></div>
+  <div class="grid" id="grid"></div>
+  <p class="status" id="status"></p>
+</main>
+
+<footer>Academia de Idiomas Smart · Understand the world</footer>
+
+<!-- ============ ADD / EDIT MODAL ============ -->
+<div class="overlay" id="formOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <h2 id="formTitle">Add material</h2>
+    <p style="margin:0;color:var(--muted)">Fill in the fields. Only the name and the title are required.</p>
+    <form id="materialForm">
+      <div class="row">
+        <div class="field">
+          <label for="fLang">Window</label>
+          <select id="fLang">
+            <option value="english">English Teachers</option>
+            <option value="french">French Teachers</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fSection">Section</label>
+          <select id="fSection"></select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="fTeacher">Teacher's name *</label>
+        <input id="fTeacher" required maxlength="80" placeholder="e.g. Laura Gómez">
+      </div>
+      <div class="field">
+        <label for="fTitle">Activity title *</label>
+        <input id="fTitle" required maxlength="120" placeholder="e.g. Present Perfect Quiz">
+      </div>
+      <div class="field">
+        <label for="fDesc">Activity description</label>
+        <textarea id="fDesc" maxlength="1000" placeholder="What should students do? Level, time, instructions…"></textarea>
+      </div>
+      <div class="field">
+        <label>Type of material</label>
+        <div class="type-grid" id="typeGrid"></div>
+      </div>
+      <div class="field">
+        <label for="fLink">Link <small>(optional)</small></label>
+        <input id="fLink" type="url" placeholder="https://…">
+        <div class="create-box">
+          <p>Need to create new material? Open a tool, make it, then paste the link above:</p>
+          <div id="createTools"></div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn primary" id="saveBtn">💾 Save material</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ VIEWER MODAL ============ -->
+<div class="overlay" id="viewerOverlay">
+  <div class="modal viewer" role="dialog" aria-modal="true">
+    <div class="viewer-head">
+      <h2 id="viewerTitle"></h2>
+      <a class="btn small" id="viewerExternal" target="_blank" rel="noopener">↗ Open in new tab</a>
+      <button class="btn small primary" id="viewerClose">✕ Close</button>
+    </div>
+    <iframe id="viewerFrame" allowfullscreen allow="autoplay; fullscreen; clipboard-write"></iframe>
+    <p class="hint">If the material does not appear, that website does not allow being shown inside other pages. Use “Open in new tab”.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================
+   1) SUPABASE SETTINGS — paste your project values here
+   (Supabase → Project Settings → API)
+   If left empty, the page still works but saves only in
+   this browser (demo mode).
+   ===================================================== */
+const SUPABASE_URL = "";
+const SUPABASE_ANON_KEY = "";
+
+/* ============ DATA ============ */
+const SECTIONS = [
+  {id:"grammar",   name:"Grammar",   icon:"📘", text:"Structures, tenses and rules"},
+  {id:"listening", name:"Listening", icon:"🎧", text:"Audio and video comprehension"},
+  {id:"speaking",  name:"Speaking",  icon:"🗣️", text:"Conversation and pronunciation"},
+  {id:"reading",   name:"Reading",   icon:"📖", text:"Texts and comprehension"},
+  {id:"writing",   name:"Writing",   icon:"✍️", text:"Paragraphs, essays and emails"},
+  {id:"exams",     name:"International Exams", icon:"🎓", text:"Cambridge, IELTS, TOEFL, DELF, DALF…"}
+];
+const TYPES = [
+  {id:"game",      name:"Game",       icon:"🎮"},
+  {id:"slides",    name:"Slides",     icon:"📊"},
+  {id:"animation", name:"Animation",  icon:"🎬"},
+  {id:"video",     name:"Video",      icon:"▶️"},
+  {id:"worksheet", name:"Worksheet",  icon:"📝"},
+  {id:"website",   name:"Website",    icon:"🌐"},
+  {id:"other",     name:"Other",      icon:"📁"}
+];
+const CREATE_TOOLS = [
+  {name:"Google Slides", icon:"📊", url:"https://slides.new"},
+  {name:"Google Docs",   icon:"📝", url:"https://docs.new"},
+  {name:"Google Forms",  icon:"✅", url:"https://forms.new"},
+  {name:"Canva",         icon:"🎨", url:"https://www.canva.com/"},
+  {name:"Genially",      icon:"✨", url:"https://app.genial.ly/"},
+  {name:"Wordwall",      icon:"🎮", url:"https://wordwall.net/create"},
+  {name:"GitHub (game repo)", icon:"💻", url:"https://github.com/new"}
+];
+
+let db = null;
+if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+const state = { lang:"english", section:"grammar", items:[], search:"", editingId:null, type:"other" };
+const $ = id => document.getElementById(id);
+
+/* ============ STORAGE (Supabase or local demo) ============ */
+const LOCAL_KEY = "smart_practice_materials";
+function localRead(){ try{ return JSON.parse(localStorage.getItem(LOCAL_KEY)) || []; }catch(e){ return []; } }
+function localWrite(list){ try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(list)); }catch(e){} }
+
+async function loadItems(){
+  if (db){
+    const { data, error } = await db.from("materials").select("*").order("created_at",{ascending:false});
+    if (error){ toast("Could not load materials"); console.error(error); return; }
+    state.items = data;
+    $("status").textContent = "Connected · materials are shared with all teachers";
+  } else {
+    state.items = localRead();
+    $("status").textContent = "Demo mode · materials are saved only in this browser (connect Supabase to share them)";
+  }
+  render();
+}
+
+async function saveItem(item){
+  if (db){
+    const q = state.editingId
+      ? db.from("materials").update(item).eq("id", state.editingId)
+      : db.from("materials").insert(item);
+    const { error } = await q;
+    if (error){ toast("Could not save. Try again."); console.error(error); return false; }
+  } else {
+    const list = localRead();
+    if (state.editingId){
+      const i = list.findIndex(x => x.id === state.editingId);
+      if (i > -1) list[i] = { ...list[i], ...item };
+    } else {
+      list.unshift({ ...item, id: crypto.randomUUID(), created_at: new Date().toISOString() });
+    }
+    localWrite(list);
+  }
+  return true;
+}
+
+async function deleteItem(id){
+  if (db){
+    const { error } = await db.from("materials").delete().eq("id", id);
+    if (error){ toast("Could not delete"); return; }
+  } else {
+    localWrite(localRead().filter(x => x.id !== id));
+  }
+  toast("Material deleted");
+  loadItems();
+}
+
+/* ============ HELPERS ============ */
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function safeUrl(u){
+  try{ const x = new URL(u); return (x.protocol === "https:" || x.protocol === "http:") ? x.href : ""; }catch(e){ return ""; }
+}
+// Turns common links into versions that can be shown inside the page
+function toEmbed(url){
+  try{
+    const u = new URL(url), h = u.hostname.replace("www.","");
+    if (h === "youtube.com" && u.searchParams.get("v")) return "https://www.youtube.com/embed/" + u.searchParams.get("v");
+    if (h === "youtu.be") return "https://www.youtube.com/embed" + u.pathname;
+    if (h === "youtube.com" && u.pathname.startsWith("/shorts/")) return "https://www.youtube.com/embed/" + u.pathname.split("/")[2];
+    if (h === "vimeo.com" && /^\/\d+/.test(u.pathname)) return "https://player.vimeo.com/video" + u.pathname;
+    if (h === "docs.google.com"){
+      const m = u.pathname.match(/^\/(presentation|document|spreadsheets)\/d\/([^/]+)/);
+      if (m) return `https://docs.google.com/${m[1]}/d/${m[2]}/${m[1]==="presentation" ? "embed" : "preview"}`;
+      if (u.pathname.includes("/forms/")) { u.searchParams.set("embedded","true"); return u.href; }
+    }
+    if (h === "drive.google.com"){
+      const m = u.pathname.match(/\/file\/d\/([^/]+)/);
+      if (m) return `https://drive.google.com/file/d/${m[1]}/preview`;
+    }
+    if (h === "canva.com" && u.pathname.includes("/design/")){
+      const base = u.href.split("?")[0].replace(/\/edit$/, "/view");
+      return base + "?embed";
+    }
+    return url;
+  }catch(e){ return url; }
+}
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2600); }
+function fmtDate(d){ try{ return new Date(d).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}); }catch(e){ return ""; } }
+
+/* ============ RENDER ============ */
+function render(){
+  $("windowTitle").textContent = state.lang === "english" ? "English Practice Materials" : "French Practice Materials";
+  document.querySelectorAll(".lang-tab").forEach(b => b.classList.toggle("active", b.dataset.lang === state.lang));
+
+  const inLang = state.items.filter(x => x.language === state.lang);
+  $("sections").innerHTML = SECTIONS.map(s => {
+    const n = inLang.filter(x => x.section === s.id).length;
+    return `<button class="sec-btn ${s.id===state.section?"active":""}" data-sec="${s.id}">${s.icon} ${s.name} <span class="count">${n}</span></button>`;
+  }).join("");
+
+  const sec = SECTIONS.find(s => s.id === state.section);
+  $("sectionHeader").innerHTML = `<span class="icon">${sec.icon}</span><div><h3>${sec.name}</h3><p>${sec.text}</p></div>`;
+
+  const q = state.search.toLowerCase();
+  const list = inLang.filter(x => x.section === state.section)
+    .filter(x => !q || [x.title, x.teacher_name, x.description].join(" ").toLowerCase().includes(q));
+
+  if (!list.length){
+    $("grid").innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="big">📂</div>
+      <p><strong>No materials here yet.</strong><br>Be the first to share one!</p>
+      <button class="btn primary" onclick="openForm()">➕ Add material</button></div>`;
+    return;
+  }
+
+  $("grid").innerHTML = list.map(x => {
+    const t = TYPES.find(t => t.id === x.material_type) || TYPES[TYPES.length-1];
+    const link = safeUrl(x.link);
+    return `<article class="card">
+      <span class="tag">${t.icon} ${t.name}</span>
+      <h4>${esc(x.title)}</h4>
+      ${x.description ? `<p class="desc">${esc(x.description)}</p>` : ""}
+      <div class="meta">👤 ${esc(x.teacher_name)} · 📅 ${fmtDate(x.created_at)}</div>
+      ${link ? `<div class="link-line">🔗 <a href="${esc(link)}" target="_blank" rel="noopener">${esc(link)}</a></div>` : ""}
+      <div class="actions">
+        ${link ? `<button class="btn small primary" data-view="${x.id}">👁 View here</button>` : ""}
+        <button class="btn small ghost" data-edit="${x.id}">✏️ Edit</button>
+        <button class="btn small danger" data-del="${x.id}">🗑 Delete</button>
+      </div>
+    </article>`;
+  }).join("");
+}
+
+/* ============ FORM ============ */
+function fillSections(){ $("fSection").innerHTML = SECTIONS.map(s => `<option value="${s.id}">${s.icon} ${s.name}</option>`).join(""); }
+function renderTypes(){
+  $("typeGrid").innerHTML = TYPES.map(t => `<button type="button" class="type-opt ${t.id===state.type?"active":""}" data-type="${t.id}">${t.icon} ${t.name}</button>`).join("");
+}
+function openForm(item){
+  state.editingId = item ? item.id : null;
+  $("formTitle").textContent = item ? "Edit material" : "Add material";
+  $("fLang").value = item ? item.language : state.lang;
+  $("fSection").value = item ? item.section : state.section;
+  $("fTeacher").value = item ? item.teacher_name : (localStorageGet("smart_teacher") || "");
+  $("fTitle").value = item ? item.title : "";
+  $("fDesc").value = item ? (item.description || "") : "";
+  $("fLink").value = item ? (item.link || "") : "";
+  state.type = item ? (item.material_type || "other") : "other";
+  renderTypes();
+  $("formOverlay").classList.add("open");
+  setTimeout(() => $(item ? "fTitle" : "fTeacher").focus(), 200);
+}
+function closeForm(){ $("formOverlay").classList.remove("open"); }
+function localStorageGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function localStorageSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
+$("materialForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const link = $("fLink").value.trim();
+  if (link && !safeUrl(link)){ toast("The link must start with https://"); return; }
+  const item = {
+    language: $("fLang").value,
+    section: $("fSection").value,
+    teacher_name: $("fTeacher").value.trim(),
+    title: $("fTitle").value.trim(),
+    description: $("fDesc").value.trim(),
+    link: link || null,
+    material_type: state.type
+  };
+  $("saveBtn").disabled = true;
+  const ok = await saveItem(item);
+  $("saveBtn").disabled = false;
+  if (!ok) return;
+  localStorageSet("smart_teacher", item.teacher_name);
+  closeForm();
+  state.lang = item.language; state.section = item.section;
+  toast(state.editingId ? "Material updated ✔" : "Material added ✔");
+  state.editingId = null;
+  loadItems();
+});
+
+/* ============ VIEWER ============ */
+function openViewer(item){
+  const link = safeUrl(item.link); if (!link) return;
+  $("viewerTitle").textContent = item.title;
+  $("viewerExternal").href = link;
+  $("viewerFrame").src = toEmbed(link);
+  $("viewerOverlay").classList.add("open");
+}
+function closeViewer(){ $("viewerOverlay").classList.remove("open"); setTimeout(() => $("viewerFrame").src = "about:blank", 300); }
+
+/* ============ THEME ============ */
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  $("themeBtn").textContent = t === "dark" ? "☀️ Light mode" : "🌙 Dark mode";
+  localStorageSet("smart_theme", t);
+}
+
+/* ============ EVENTS ============ */
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const find = id => state.items.find(x => String(x.id) === id);
+  if (b.dataset.lang){ state.lang = b.dataset.lang; render(); }
+  if (b.dataset.sec){ state.section = b.dataset.sec; render(); }
+  if (b.dataset.type){ state.type = b.dataset.type; renderTypes(); }
+  if (b.dataset.view){ openViewer(find(b.dataset.view)); }
+  if (b.dataset.edit){ openForm(find(b.dataset.edit)); }
+  if (b.dataset.del){ const it = find(b.dataset.del); if (confirm(`Delete "${it.title}"? This cannot be undone.`)) deleteItem(it.id); }
+});
+$("addBtn").onclick = () => openForm();
+$("cancelBtn").onclick = closeForm;
+$("viewerClose").onclick = closeViewer;
+$("formOverlay").addEventListener("click", e => { if (e.target.id === "formOverlay") closeForm(); });
+$("viewerOverlay").addEventListener("click", e => { if (e.target.id === "viewerOverlay") closeViewer(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape"){ closeForm(); closeViewer(); } });
+$("search").addEventListener("input", e => { state.search = e.target.value; render(); });
+$("themeBtn").onclick = () => applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+
+/* ============ START ============ */
+fillSections();
+$("createTools").innerHTML = CREATE_TOOLS.map(t => `<a class="btn small" href="${t.url}" target="_blank" rel="noopener">${t.icon} ${t.name}</a>`).join("");
+applyTheme(localStorageGet("smart_theme") || "light");
+loadItems();
+
+// Live updates: when another teacher adds material, refresh automatically
+if (db){
+  db.channel("materials-live")
+    .on("postgres_changes", { event:"*", schema:"public", table:"materials" }, () => loadItems())
+    .subscribe();
+}
+</script>
+</body>
+</html>
