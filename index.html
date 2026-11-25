@@ -159,6 +159,7 @@
   .viewer .hint{color:var(--muted);font-size:.9rem;margin:8px 4px 0}
 
   .toast{
+    max-width:90vw;text-align:center;
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--red);color:#fff;
     padding:14px 28px;border-radius:999px;font-weight:700;z-index:60;transition:transform .35s ease;box-shadow:var(--shadow)
   }
@@ -313,7 +314,10 @@ const CREATE_TOOLS = [
 
 let db = null;
 if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
-  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Accepts the URL even if it was copied with /rest/v1/ or a trailing slash
+  let cleanUrl = SUPABASE_URL.trim();
+  try { cleanUrl = new URL(cleanUrl).origin; } catch(e) {}
+  db = window.supabase.createClient(cleanUrl, SUPABASE_ANON_KEY.trim());
 }
 
 const state = { lang:"english", section:"grammar", items:[], search:"", editingId:null, type:"other" };
@@ -327,7 +331,7 @@ function localWrite(list){ try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(l
 async function loadItems(){
   if (db){
     const { data, error } = await db.from("materials").select("*").order("created_at",{ascending:false});
-    if (error){ toast("Could not load materials"); console.error(error); return; }
+    if (error){ toast("Could not load materials: " + error.message, 9000); console.error(error); return; }
     state.items = data;
     $("status").textContent = "Connected · materials are shared with all teachers";
   } else {
@@ -343,7 +347,7 @@ async function saveItem(item){
       ? db.from("materials").update(item).eq("id", state.editingId)
       : db.from("materials").insert(item);
     const { error } = await q;
-    if (error){ toast("Could not save. Try again."); console.error(error); return false; }
+    if (error){ toast("Could not save: " + error.message, 9000); console.error(error); return false; }
   } else {
     const list = localRead();
     if (state.editingId){
@@ -360,7 +364,7 @@ async function saveItem(item){
 async function deleteItem(id){
   if (db){
     const { error } = await db.from("materials").delete().eq("id", id);
-    if (error){ toast("Could not delete"); return; }
+    if (error){ toast("Could not delete: " + error.message, 9000); return; }
   } else {
     localWrite(localRead().filter(x => x.id !== id));
   }
@@ -397,7 +401,7 @@ function toEmbed(url){
     return url;
   }catch(e){ return url; }
 }
-function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2600); }
+function toast(msg, ms){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"), ms || 2600); }
 function fmtDate(d){ try{ return new Date(d).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}); }catch(e){ return ""; } }
 
 /* ============ RENDER ============ */
@@ -466,6 +470,13 @@ function closeForm(){ $("formOverlay").classList.remove("open"); }
 function localStorageGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
 function localStorageSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 
+// If a required field is empty, scroll to it and say which one
+$("materialForm").addEventListener("invalid", e => {
+  const label = document.querySelector(`label[for="${e.target.id}"]`);
+  toast("Please fill in: " + (label ? label.textContent.replace("*","").trim() : "required field"), 4000);
+  e.target.scrollIntoView({behavior:"smooth", block:"center"});
+}, true);
+
 $("materialForm").addEventListener("submit", async e => {
   e.preventDefault();
   const link = $("fLink").value.trim();
@@ -480,7 +491,9 @@ $("materialForm").addEventListener("submit", async e => {
     material_type: state.type
   };
   $("saveBtn").disabled = true;
-  const ok = await saveItem(item);
+  let ok = false;
+  try { ok = await saveItem(item); }
+  catch(err){ toast("Could not save: " + err.message, 9000); console.error(err); }
   $("saveBtn").disabled = false;
   if (!ok) return;
   localStorageSet("smart_teacher", item.teacher_name);
